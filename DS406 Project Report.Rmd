@@ -1,0 +1,140 @@
+---
+title: "NYC Flights"
+author: "Ellen Creed, Rachel McInerney, Siun Mulcahy, Conor Thompson"
+date: "`r format(Sys.time(), '%X %d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+---
+ 
+## Introduction
+
+This data describes all flights that departed New York City in 2013 and is available in R (R Core Team, 2023). 'flights' contains 327,346 observations and 19 variables detailing flight punctuality. Additional information regarding airlines, airports, weather, and
+planes is also provided (Wickham, 2021).
+
+## Methods
+
+In order to produce enlightening visualisations of this dataset, data cleaning and wrangling were performed with dplyr (Wickham et al., 2023). We used functions from own `densr` package (McInerney et al., 2024) to create a density histogram. Other plots were generated using ggplot2 (Wickham, 2016).
+
+Motivating questions include:  
+1. Is there a particular airline that is more on time than others?  
+2. What density distribution does flight duration follow?  
+3. Which flight destinations (/ NY airport is) are the most popular?
+4. What are the busiest times for flights?
+
+## Results
+
+```{r, eval = F}
+# Install packages
+install.packages('devtools') 
+install.packages('nycflights13')
+devtools::install_github('rachel-mc/densr')
+```
+
+```{r}
+# Load the relevant libraries
+suppressMessages(library(nycflights13))
+suppressMessages(library(densr))
+suppressMessages(library(tidyverse))
+suppressMessages(library(ggplot2))
+
+# Remove NAs
+flights <- nycflights13::flights[complete.cases(nycflights13::flights[,]),] 
+```
+
+### Question 1
+
+```{r, eval = F}
+# Possibly helpful code
+flights |> slice_max(arr_delay)
+
+flights |> rename(arrival_delay = arr_delay) -> flights
+
+flights |> select(contains('time'))
+
+# Could plot time made up (difference in arrival and departure delay) to answer Q
+flights |> mutate(gain = arrival_delay - dep_delay, # or transmute
+                  gain_per_hour = gain / (air_time / 60)) |>
+  select(arrival_delay, dep_delay, gain, gain_per_hour)
+```
+
+
+### Question 2
+
+```{r}
+# Data manipulation
+# Group the data into individual planes and compute the median air time
+air_num <- flights |>
+  group_by(tailnum) |>
+  summarise(airtime = median(air_time))
+
+# Extract numeric vector
+air_time <- air_num$airtime
+
+# Overlay frequency polygon density estimation
+frequency_polygon(air_time)
+air_fp <- create_hist_dens(air_time, type = "fp", breaks = "Scott")
+suppressWarnings(plot(air_fp, border = "dodgerblue2", lwd = 1.5, lty = 2, 
+                      xlab = "Median Air Time in minutes per Airline", 
+                      main = "Histogram of air_time with Frequency Polygon Density Estimate"))
+
+## label by plane ID ??? - typical plane that spends more time in air
+
+# Sort in decreasing order
+air_num |> arrange(desc(airtime))
+planes <- nycflights13::planes # # all plane tailnumbers found of the FAA aircraft registry
+planes |> filter(tailnum == "N384HA")
+```
+
+The distribution of the density appears to be bimodal, with the frequency ploygon coordinates capturing the second peak. The distribution is right skewed and we observe positive kurtosis. The most frequent median flight time occurring lasted approximately two hours. There are outliers appearing at flight durations of 600 minutes and beyond.
+
+The plane that spent the most time in the air on average was N384HA. Consulting the planes metadata highlighted that this was a 2011 Fixed wing multi-engine manufactured by AIRBUS.
+
+Intuitively, the different routes from New York correspond to different distances between airports which explain the varying lengths of air time. 
+
+### Question 3
+
+```{r}
+# Could look at flights that leave on a specific day only eg: Christmas
+flights |> filter(month == 12, day == 25) #include other vars eg: carrier
+```
+
+
+### Question 4
+
+```{r}
+# Combine month and day to date format...
+
+# Sketch code
+data <- flights |>
+  group_by(carrier) |> 
+  summarise(count = n())
+
+ggplot(data, aes(date, count)) +
+  geom_point(aes(size = count), alpha = 1/2) + # or geom_bar
+  geom_smooth() +
+  scale_size_area()
+
+```
+
+
+
+
+## Discussion
+
+The visualisations above display this data coherently but we can make also make statistical observations and inferences from them.
+
+We receive insights into...
+
+## References section
+
+McInerney R, Thompson C, Ukachukwu O (2024). _densr: Overlay densities to
+histograms_. R package version 0.1.0, <https://github.com/rachel-mc/densr>.  
+
+R Core Team. (2023). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL: https://www.R-project.org/  
+
+Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.  
+
+Wickham H (2021). _nycflights13: Flights that Departed NYC in 2013_. R package version 1.0.2, <https://CRAN.R-project.org/package=nycflights13>.  
+
+Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data Manipulation_. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
