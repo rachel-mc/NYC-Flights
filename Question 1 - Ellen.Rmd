@@ -1,0 +1,103 @@
+---
+title: "Question 1"
+author: "Ellen Creed"
+date: "2024-04-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("nycflights13")
+library(nycflights13)
+library(tidyverse)
+
+nycflights13::weather
+head(airlines)
+
+```
+
+```{r}
+head(airports)
+
+```
+
+```{r}
+#Is there a particular airline that is more on time than others?
+average_delay <- flights %>%
+  group_by(carrier) %>%
+  summarise(avg_arrival_delay = mean(arr_delay, na.rm = TRUE))
+
+#Each airline arranged by average arrival delay in ascending order
+average_delay <- average_delay[order(average_delay$avg_arrival_delay), ]
+
+print(average_delay)
+
+```
+
+```{r}
+#boxplot
+library(ggplot2)
+
+ggplot(flights, aes(x = carrier, y = arr_delay)) +
+  geom_boxplot(fill = "skyblue", colour = "blue") +
+  labs(title = "Arrival Delay by Airline",
+       x = "Airline",
+       y = "Arrival Delay (minutes)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+
+
+```
+
+flip the graph from the x axis to the y axis
+make the scale smaller
+
+Violin Plot
+```{r}
+ggplot(flights, aes(x = carrier, y = arr_delay)) +
+  geom_violin(fill = "skyblue", color = "blue") +
+  labs(title = "Distribution of Arrival Delay by Airline",
+       x = "Airline",
+       y = "Arrival Delay (minutes)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+scatter plot
+```{r}
+ggplot(average_delay, aes(x = carrier, y = avg_arrival_delay)) +
+  geom_point(color = "blue", size = 3) +
+  labs(title = "Average Arrival Delay by Airline",
+       x = "Airline",
+       y = "Average Arrival Delay (minutes)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+#supplementary info
+```{r}
+
+plot_data <- flights %>%
+  filter(!is.na(arr_delay), !is.na(dep_delay)) %>%
+  ggplot(aes(x = dep_delay, y = arr_delay, color = carrier)) +
+  geom_point() +
+  labs(x = "Departure Delay (minutes)", y = "Arrival Delay (minutes)",
+       title = "Scatterplot of Arrival Delay vs. Departure Delay",
+       color = "Airline") +
+  theme_minimal()
+
+plot_data
+
+
+```
+
+
+
+
