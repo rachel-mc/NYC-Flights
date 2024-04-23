@@ -29,7 +29,6 @@ Motivating questions include:
 # install.packages('devtools') 
 # install.packages('nycflights13')
 # devtools::install_github('rachel-mc/densr')
-
 # Load the relevant libraries
 suppressMessages(library(nycflights13))
 suppressMessages(library(densr))
@@ -61,6 +60,13 @@ ggplot(flights, aes(x = carrier, y = arr_delay)) +
 
 filter(nycflights13::airlines, carrier == "AS")
 ```
+This horizontal boxplot representing the average arrival delay in minutes of different carriers from the NYCflights13 library reveals insightful trends. The plot displays that carriers 'AS' (Alaska Airlines) consistently exhibit the least arrival delays. This is closely followed by that of 'HA' giving these airlines the title of being more on time than others and therefore the reputation of being punctual. In contrast, the carriers of 'FL' and 'F9' are on the other end of the spectrum displaying the longest arrival delay meaning that they both are the most delayed airlines in comparison to the others. This is strenghtened by the fact the outliers from these airlines data are all displayed in the postiive side of the x axis implying that there is outliers that are even more delayed than the average delay showing a large variability in the data.
+  
+  The boxplot's central tendency, as depicted by the position of the median line within the boxes, indicates that both the previously mentioned carriers tend to have lower average dealys compared to other carriers in the dataset. Notably, however, these carriers are only relatively compact in terms of the size of their boxes especially in comparison to the carrier of 'OO' for example, which exhibits a particular small box. THe smaller the size of the box suggests less variability in arrival delay times. Therefore, it is implied that even though 'AS' is the most on time on average there is some slight variability within it's values and the carrier of 'OO' demonstrates the most consistent performance. In addition to this, 'OO' also displays the least amount of outliers reinforcing the idea of it having the most consistent performance.
+  
+  By focusing solely on the boxplot's interquartile range and median, without considering outliers, the portrayal emphasises the typical delay experience, highlighting 'AS' and 'HA' as favourable choices for travellers prioritising punctuality. On the other hand the 'FL' and 'F9' are poor choices when prioritising punctuality as they display the weakest performance in terms of arrival delay.
+##I know I wrote way too much, I thought it would be easier to get rid of things rather than add things to it but let me know if you want me to redo and shorten it:)
+
 
 'AS' or Alaska Airlines Inc. has the smallest arrival delay in minutes, therefore it tends to be the airline that is the most on time. This is confirmed by the table of carriers arranged by average arrival delay in the Suppl. Info. Negative arrival delay corresponds to time gained during a journey i.e. passengers arrive earlier than scheduled. 
 
