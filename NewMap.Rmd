@@ -1,0 +1,168 @@
+---
+title: "NYCMap"
+author: "Siun 20483896"
+date: "2024-04-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Installng Packages
+```{r}
+install.packages("nycflights13")
+library(nycflights13)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("usmap")
+library(usmap)
+install.packages("tidyverse")
+library(tidyverse)
+#install.packages("mapdata")
+library(mapdata)
+install.packages("plotly")
+library(plotly)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("RColorBrewer")
+library(RColorBrewer)
+```
+
+##Exploring Data
+```{r}
+#Flights data
+flights <- nycflights13::flights
+
+#Airports Data
+airports <- nycflights13::airports
+
+airport_flights <- flights %>% group_by(origin)
+
+#Finding Unique destinations 
+dest <- flights$dest
+unique(dest)
+```
+##Long and Lats for Map
+```{r}
+#Creating a dataframe with long and lats of each airport
+airport_labels <- data.frame(
+  airport = c("BWI", "CLT", "BUF", "DEN", "SNA", "MSY", "SLC", "XNA", "MKE", "SEA", "ROC", "SYR", "SRQ", "RDU", "CMH", "JAX", "CHS", "MEM", "PIT", "SAN", "DCA", "CLE", "STL", "MYR", "JAC", "MDW", "HNL", "BNA", "AUS", "BTV", "PHL", "STT","EGE", "AVL", "PWM", "IND", "SAV", "CAK", "HOU", "LGB", "DAY", "ALB", "BDL", "MHT", "MSN", "GSO", "CVG", "BUR", "RIC", "GSP", "GRR", "MCI", "ORF", "SAT", "SDF", "PDX", "SJC", "OMA", "CRW", "OAK", "SMF", "TUL", "TYS", "OKC", "PVD", "DSM", "PSE", "BHM", "CAE", "HDN", "BZN", "MTJ", "EYW", "PSP", "ACK", "BGR", "ABQ", "ILM", "MVY", "SBN", "LEX", "CHO", "TVC", "ANC", "LGA", "ATL", "BOS", "BQN", "DFW", "DTW", "FLL", "IAD", "IAH", "LAS", "LAX", "MCO", "MIA", "MSP", "ORD", "PBI", "PHX", "RSW", "SFO", "SJU", "TPA"),
+  dest = c("BWI", "CLT", "BUF", "DEN", "SNA", "MSY", "SLC", "XNA", "MKE", "SEA", "ROC", "SYR", "SRQ", "RDU", "CMH", "JAX", "CHS", "MEM", "PIT", "SAN", "DCA", "CLE", "STL", "MYR", "JAC", "MDW", "HNL", "BNA", "AUS", "BTV", "PHL", "STT", "EGE", "AVL", "PWM", "IND", "SAV", "CAK", "HOU", "LGB", "DAY", "ALB", "BDL", "MHT", "MSN", "GSO", "CVG", "BUR", "RIC", "GSP", "GRR", "MCI", "ORF", "SAT", "SDF", "PDX", "SJC", "OMA", "CRW", "OAK", "SMF", "TUL", "TYS", "OKC", "PVD", "DSM", "PSE", "BHM","CAE", "HDN", "BZN", "MTJ", "EYW", "PSP", "ACK", "BGR", "ABQ", "ILM","MVY", "SBN", "LEX", "CHO", "TVC", "ANC", "LGA","ATL", "BOS", "BQN", "DFW", "DTW", "FLL", "IAD", "IAH", "LAS", "LAX", "MCO", "MIA", "MSP", "ORD", "PBI", "PHX", "RSW", "SFO", "SJU", "TPA"),
+   lat = c(39.1754, 35.214, 42.940, 39.856, 33.6757, 29.9934, 40.7899, 36.2819, 42.9485, 47.4502, 43.1185, 43.1185, 27.9779, 35.8801, 39.998, 30.4941, 32.8987, 35.0423, 40.4958, 32.7336, 38.8512, 41.409, 38.7487, 33.6827, 43.607, 41.7868, 21.3241, 36.1249, 30.1944, 44.472, 39.872, 18.3371, 39.6426, 35.4362, 43.6445, 39.7173, 32.1316, 40.9168, 29.6454, 33.8171, 39.9023, 42.748, 41.9389, 42.9309, 43.1399, 36.0977, 39.0462, 34.2005, 37.5067, 34.8903, 42.8864, 39.2978, 36.8947, 29.5337, 38.178, 45.5887, 37.3645, 41.3031, 38.3721, 37.7214, 38.6953, 36.1984, 35.8117, 35.3931, 41.7265, 41.532, 18.0086, 33.5618, 33.9382, 40.4872, 45.7775, 38.5111, 24.5567, 33.8223, 41.2535, 44.8074, 35.0496, 34.2704, 41.3917, 41.7086, 38.0367, 38.1386, 44.7414, 61.1743, 40.7769, 33.6407, 42.3656, 18.4955, 32.8965, 42.2129, 26.0727, 38.9476, 29.9902, 36.084, 33.9416, 28.4312, 25.7933, 44.882, 41.9796, 26.6832, 33.4351, 26.5362, 37.6189, 18.4394, 27.979168),
+  long = c(-76.6683, -80.9431, -78.732, -104.6737, -117.8678, -90.2572, -111.9791, -94.306, -87.8974, -122.3093, -77.6267, -76.1117, -82.5536, -78.787, -82.883, -81.6879, -80.0405, -89.9767, -80.2564, -117.1973, -77.0377, -81.8498, -90.370, -78.9288, -110.737, -87.7521, -157.925, -86.6702, -97.6699, -73.155, -75.2432, -64.9738, -106.9155, -82.5411, -70.3063, -86.2945, -81.2014, -81.4422, -95.2789, -118.1525, -84.2209, -73.8017, -72.6832, -71.437, -89.3375, -79.9373, -84.6623, -118.358, -77.3195, -82.2179, -85.5306, -94.7139, -76.202, -98.4691, -85.7396, -122.5976, -121.928, -95.894, -81.593, -122.2208, -121.591, -95.8836, -83.985, -97.6009, -71.4391, -93.6486, -66.5634, -86.752, -81.1189, -107.2219, -111.153, -107.8936, -81.7595, -116.5076, -70.0602, -68.8284, -106.617, -77.9025,-70.6156, -86.3175, -84.6042, -78.4529, -85.5828, -149.9962, -73.8734, -84.4277, -71.0096, -67.1342, -97.038, -83.3534, -80.1528, -77.4558, -95.339, -115.152, -118.4085, -81.308, -80.2906, -93.2218, -87.882, -80.0956, -112.0068, -81.7555, -122.375, -66.0018, -82.539337))
+
+
+```
+#Data Manipulation
+```{r}
+#Number of flights from each origin airport to each destination airport:
+flight_count_per_airport <- flights |>
+  group_by(dest, origin) |>
+  summarise(flight_count_per_airport = n(), .groups = "drop")
+
+flight_count_per_airport <-flight_count_per_airport |> group_by(dest)
+
+#Total number of flights in each destination:
+count <- flights |> select(dest) |>
+  count(dest)
+
+count <- as.data.frame(count)
+
+count <- count |> rename(Total_Flight_Count = n)
+
+flight_count_per_airport
+count
+
+
+#Merging data sets:
+airportCount <- merge(airport_labels, count, by.x = "airport", by.y = "dest", all.x = TRUE)
+```
+
+
+```{r}
+all_combinations <- expand_grid(dest = unique(flights$dest), origin = c("JFK", "LGA", "EWR"))
+
+# Group by dest and origin and calculate flight counts
+flight_count_per_airport <- flights %>%
+  count(dest, origin) %>%
+  right_join(all_combinations, by = c("dest", "origin")) %>%
+  mutate(flight_count = replace_na(n, 0)) %>%
+  select(-n)
+
+# Pivot the data to have separate columns for each origin
+flight_count_per_airport <- flight_count_per_airport %>%
+  pivot_wider(names_from = origin, values_from = flight_count, values_fill = 0)
+
+# Calculate total flight count per destination
+total_flight_count <- flight_count_per_airport %>%
+  group_by(dest) %>%
+  summarise(total_flight_count = sum(JFK, LGA, EWR), .groups = "drop")
+
+# Join with total_flight_count
+flight_count_per_airport <- flight_count_per_airport %>%
+  left_join(total_flight_count, by = "dest")
+
+# Join with airport_labels
+flight_count_per_airport <- flight_count_per_airport %>%
+  left_join(airport_labels, by = "dest")
+
+#Labels for plot
+flight_count_per_airport$text <- paste("Airport:", flight_count_per_airport$airport,
+                                       "<br>Total Flight Count:", flight_count_per_airport$total_flight_count,
+                                       "<br>Flights from JFK:", flight_count_per_airport$JFK,
+                                       "<br>Flights from LGA:", flight_count_per_airport$LGA,
+                                       "<br>Flights from EWR:", flight_count_per_airport$EWR)
+
+flight_count_per_airport
+```
+
+```{r}
+#Counting airport with highest count per dest 
+flight_count_per_airport <- flight_count_per_airport %>%
+  mutate(highest_origin = case_when(
+    JFK > EWR & JFK > LGA ~ "JFK",
+    EWR > JFK & EWR > LGA ~ "EWR",
+    LGA > JFK & LGA > EWR ~ "LGA",
+    TRUE ~ NA_character_
+  ))
+```
+
+#Mapping Data
+```{r}
+mapUSA <- ggplot() +
+  geom_polygon(data = usa_map, aes(x = long, y = lat, group = group), 
+               fill = "lightgrey") +
+  geom_path(data = map_data("state"), aes(x = long, y = lat, group = group), size = 0.5) +
+  geom_point(data = flight_count_per_airport, aes(x = long, y = lat, size = total_flight_count, fill = highest_origin, text = text), 
+             shape = 21, color = "grey") +  
+  scale_size_continuous(name = "Total Flight Count") +
+  scale_color_manual(name = "Highest Origin",
+                     values = c("JFK" = "green", "EWR" = "red", "LGA" = "blue")) +  
+  coord_fixed() +
+  theme_void()+
+  ggtitle("Flight Counts from NYC Airports to Airports in the USA")
+
+mapUSA
+
+mapInteractive <- ggplotly(mapUSA, tooltip = c("text"))
+
+mapInteractive
+```
+
+##What are the trends seen amoungst destinatin airports with regards to eah origin?
+The map visualizes the United States, with each point representing an airport from the NYC Flights dataset. These airports include JFK, EWR, and LGA and the destination of each flight in 2013. The size of each point corresponds to the total flight count, providing a quick visual indicator of airport activity. Additionally, the color of each point reflects the airport with the highest flight count among JFK, EWR, and LGA, offering insights into which airport serves as the primary gateway for each location.
+
+Notably, 'LEX' airport in Kentucky stands out as the least connected airport, with only one flight originating from NYC, specifically from airport LGA. In contrast, 'ORD' airport in Chicago, Illinois, emerges as the most heavily trafficked destination, with a notable 17,283 flights recorded, primarily originating from 'LGA' airport.
+
+Interestingly, some states like North Dakota and South Dakota lack any points on the map. While these states do have airports, they are notably absent from the dataset. This absence could stem from either a lack of flights from NYC in 2013 or missing data for these airports within the dataset.
+
+A notable trend observed is the distribution of flights originating from JFK, EWR, and LGA. Western states tend to have a higher frequency of flights originating from JFK airport, likely due to its status as NYC's major international hub, servicing longer-distance flights. Conversely, states closer to NYC predominantly utilize airports EWR and LGA, which are smaller and typically serve shorter-distance flights. This distribution reflects the varying roles of these airports within the NYC aviation landscape.
+
+
+
+
+
+
+
+
