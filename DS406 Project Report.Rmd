@@ -110,9 +110,100 @@ Intuitively, the different routes between airports explain the varying lengths o
 
 ### Question 4
 
-```{r}
+Investigate the trends of total flights throughout the year.
 
+```{r, message = FALSE, warning = FALSE}
+#Data Manipulation
+
+flights <- flights %>%
+  mutate(day_of_year = as.numeric(format(time_hour, "%j")), carrier = as.factor(carrier)) %>% 
+  mutate(Date = as.Date(time_hour))
+
+
+flights_totals <- flights %>% 
+  group_by(carrier, day_of_year) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+
+flights_sum <- flights_totals %>% 
+  group_by(day_of_year) %>% 
+  summarise(sum_total = sum(total_flights)) %>% 
+  ungroup()
+
+carrier_totals <- aggregate(total_flights ~ carrier , data = flights_totals, FUN = sum)
+
+carrier_totals_ordered <- carrier_totals %>% 
+  arrange(desc(total_flights))
+
+top_4_carriers <- head(carrier_totals_ordered, 4)$carrier
+
+flights_totals_Date <- flights %>% 
+  group_by(Date, carrier) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+
+flights_totals_UA <- flights[flights$carrier == "UA",] %>% 
+  group_by(Date) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+flights_totals_B6 <- flights[flights$carrier == "B6",] %>% 
+  group_by(Date) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+flights_totals_DL <- flights[flights$carrier == "DL",] %>% 
+  group_by(Date) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+flights_totals_EV <- flights[flights$carrier == "EV",] %>% 
+  group_by(Date) %>% 
+  summarise(total_flights = n()) %>% 
+  ungroup()
+
+dcmp_UA <- flights_totals_UA %>% 
+  as_tsibble() %>% 
+  model(stl = STL(total_flights))
+dcmp_B6 <- flights_totals_B6 %>% 
+  as_tsibble() %>% 
+  model(stl = STL(total_flights))
+dcmp_DL <- flights_totals_DL %>% 
+  as_tsibble() %>% 
+  model(stl = STL(total_flights))
+dcmp_EV <- flights_totals_EV %>% 
+  as_tsibble() %>% 
+  model(stl = STL(total_flights))
+
+comp_UA <- components(dcmp_UA) %>% 
+  as_tsibble()
+comp_B6 <- components(dcmp_B6) %>% 
+  as_tsibble()
+comp_DL <- components(dcmp_DL) %>% 
+  as_tsibble()
+comp_EV <- components(dcmp_EV) %>% 
+  as_tsibble()
+
+major_holidays <- as.Date(c("2013-07-04", "2013-09-01", "2013-11-28", "2013-12-25", "2014-01-01" ))
 ```
+```{r}
+ggplot(subset(flights_totals_Date, carrier %in% top_4_carriers), aes(x = Date, y = total_flights, colour = carrier)) +
+  geom_line(alpha = 0.6) +
+  geom_line(data = comp_UA, aes( y = trend), colour = "purple") + 
+  geom_line(data = comp_B6, aes( y = trend), colour = "red") +
+  geom_line(data = comp_DL, aes( y = trend), colour = "darkgreen") +
+  geom_line(data = comp_EV, aes( y = trend), colour = "blue") + 
+  geom_vline(xintercept = major_holidays, lty = "dashed", alpha = 0.8) + 
+  labs(y= "Total Flights", x = "Date", title = "Flight Trends across 4 Major Airlines in NYC")
+```
+
+The plot above illustrates the total number of flights per day across three major airports in NYC: JFK, LaGuardia, and EWK. The total flights are divided according to the four most popular airlines from the dataset.
+
+While the data shows a generally stable trend, there is a noticeable weekly seasonal pattern, where weekends experience lower activity compared to weekdays (see supplementary information).
+
+Overlaying the actual data are trendlines representing the flight trends for each airline. These trendlines offer insights into periods when airports experienced higher-than-usual activity. Notably, there are distinct dips in the flight count on specific dates.
+
+To investigate these dips, an examination of the weather dataset was conducted, but no anomalies were found for these days. A list comprising major federal holidays in the US was then created. Plotting vertical lines to signify these dates indicated a correlation with some of the observed dips in total flights.
+
+Additionaly, carrier B6 appears to be slightly more resilient to these holiday-related trends. This could be attributed to the fact that B6's primary airport is JFK, which is not the primary airport for any of the other major airlines plotted. However, further analysis would be needed to prove this hypothesis.
+
 
 
 ## Discussion
