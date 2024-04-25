@@ -34,6 +34,8 @@ suppressMessages(library(nycflights13))
 suppressMessages(library(densr))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ggplot2))
+suppressMessages(library(fpp3))
+
 
 # Remove NAs
 flights <- nycflights13::flights[complete.cases(nycflights13::flights[,]),] 
