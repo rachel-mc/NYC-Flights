@@ -1,6 +1,6 @@
 ---
 title: "NYC Flights"
-author: "Ellen Creed, Rachel McInerney, Siun Mulcahy, Conor Thompson"
+author: "Ellen Creed, Rachel McInerney, Siún Mulcahy, Conor Thompson"
 date: "`r format(Sys.time(), '%X %d %B, %Y')`"
 output:
   html_document:
@@ -12,30 +12,39 @@ output:
 This data describes all flights that departed New York City in 2013 and is available in R (R Core Team, 2023). 'flights' contains 327,346 observations and 19 variables detailing flight punctuality. Additional information regarding airlines, airports, weather, and
 planes is also provided (Wickham, 2021).
 
-## Methods
-
-In order to produce enlightening visualisations of this dataset, data cleaning and wrangling were performed with dplyr (Wickham et al., 2023). We used functions from own `densr` package (McInerney et al., 2024) to create a density histogram. Other plots were generated using ggplot2 (Wickham, 2016).
-
 Motivating questions include:  
 1. Is there a particular airline that is more on time than others?  
 2. What density distribution does flight duration follow?  
-3. Which flight destinations are the most popular?
-4. What are the busiest times for flights?
+3. What patterns are seen among destination airports regarding origin airports?  
+4. How do total flight trends vary throughout the year?
+
+## Methods
+
+To produce enlightening visualisations of this dataset, data cleaning and wrangling were performed with dplyr (Wickham et al., 2023). We used functions from own `densr` package (McInerney et al., 2024) to create a density histogram. Other plots were generated using ggplot2 (Wickham, 2016) and plotly was used for interactive graphics (Sievert, 2020).
 
 ## Results
 
 ```{r}
-# Install packages
+# Install packages:
 # install.packages('devtools') 
 # install.packages('nycflights13')
+# install.packages("usmap")
+# install.packages("mapdata")
+# install.packages("fpp3")
+# install.packages("plotly")
+# install.packages("RColorBrewer")
 # devtools::install_github('rachel-mc/densr')
+
 # Load the relevant libraries
 suppressMessages(library(nycflights13))
 suppressMessages(library(densr))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ggplot2))
 suppressMessages(library(fpp3))
-
+suppressMessages(library(usmap))
+suppressMessages(library(mapdata))
+suppressMessages(library(plotly))
+suppressMessages(library(RColorBrewer))
 
 # Remove NAs
 flights <- nycflights13::flights[complete.cases(nycflights13::flights[,]),] 
@@ -58,24 +67,14 @@ ggplot(flights, aes(x = carrier, y = arr_delay)) +
        y = "Arrival Delay (minutes)") +
   theme_minimal() +
   ylim(c(-75, 100)) + # to zoom in and account for outliers
+  # negative arrival delay corresponds to time gained during a journey i.e. passengers arrive earlier than scheduled
   coord_flip() 
-
-filter(nycflights13::airlines, carrier == "AS")
 ```
-This horizontal boxplot representing the average arrival delay in minutes of different carriers from the NYCflights13 library reveals insightful trends. The plot displays that carriers 'AS' (Alaska Airlines) consistently exhibit the least arrival delays. This is closely followed by that of 'HA' giving these airlines the title of being more on time than others and therefore the reputation of being punctual. In contrast, the carriers of 'FL' and 'F9' are on the other end of the spectrum displaying the longest arrival delay meaning that they both are the most delayed airlines in comparison to the others. This is strenghtened by the fact the outliers from these airlines data are all displayed in the postiive side of the x axis implying that there is outliers that are even more delayed than the average delay showing a large variability in the data.
-  
-  The boxplot's central tendency, as depicted by the position of the median line within the boxes, indicates that both the previously mentioned carriers tend to have lower average dealys compared to other carriers in the dataset. Notably, however, these carriers are only relatively compact in terms of the size of their boxes especially in comparison to the carrier of 'OO' for example, which exhibits a particular small box. THe smaller the size of the box suggests less variability in arrival delay times. Therefore, it is implied that even though 'AS' is the most on time on average there is some slight variability within it's values and the carrier of 'OO' demonstrates the most consistent performance. In addition to this, 'OO' also displays the least amount of outliers reinforcing the idea of it having the most consistent performance.
-  
-  By focusing solely on the boxplot's interquartile range and median, without considering outliers, the portrayal emphasises the typical delay experience, highlighting 'AS' and 'HA' as favourable choices for travellers prioritising punctuality. On the other hand the 'FL' and 'F9' are poor choices when prioritising punctuality as they display the weakest performance in terms of arrival delay.
-##I know I wrote way too much, I thought it would be easier to get rid of things rather than add things to it but let me know if you want me to redo and shorten it:)
 
-
-'AS' or Alaska Airlines Inc. has the smallest arrival delay in minutes, therefore it tends to be the airline that is the most on time. This is confirmed by the table of carriers arranged by average arrival delay in the Suppl. Info. Negative arrival delay corresponds to time gained during a journey i.e. passengers arrive earlier than scheduled. 
+This horizontal boxplot representing the average arrival delay in minutes of different carriers in the data displays that 'AS' (Alaska Airlines) exhibits the least arrival delays, depicted by the position of the central tendency. This is closely followed by 'HA' (Hawaiian Airlines Inc.), so these airlines are more on time than others. In stark contrast, the carriers 'FL' and 'F9' display the longest arrival delay, meaning that they are the most delayed airlines. Their outliers are positioned on the positive side of the x-axis, implying that many observations are more delayed than the average. Notably, ‘AS’ and ‘HA’ have a relatively large spread, especially in comparison to 'OO' (SkyWest Airlines Inc.) whose arrival delay times are represented by a particularly small boxplot. Therefore, even though 'AS' is the most on time on average, there is some variability within its values. 'OO' demonstrates the most consistent performance especially since it also has the least number of outliers. If we focus solely on the boxplots’ interquartile ranges and means, this plot highlights 'AS' and 'HA' as favourable choices for passengers prioritising punctuality while 'FL' and 'F9' are poor choices as they perform weakest in terms of arrival delay.
 
 
 ### Question 2
-
-Objective: Find the distributional form for the density of observed air_time using a continuous histogram estimator
 
 ```{r}
 # Initial data manipulation
@@ -91,36 +90,132 @@ air_time <- air_num$airtime/60
 frequency_polygon(air_time)
 
 air_fp <- create_hist_dens(air_time, type = "fp", breaks = "Scott")
+
 suppressWarnings(plot(air_fp, border = "dodgerblue2", lwd = 1.5, lty = 2, 
                       xlab = "Median Air Time in hours per Airline", 
                       main = "Histogram of air_time with Frequency Polygon Density Estimate")) 
 ```
 
-This density distribution appears to be bimodal, with the frequency polygon coordinates capturing the second significant peak. The distribution is right skewed and we observe positive kurtosis. The most frequent median flight time per plane lasted just over two hours. There are outliers appearing at flight durations of over 10 hours.
-
-The plane that spent the most time in the air in 2013 (on average) was N384HA (see Suppl. Info). Consulting the planes metadata highlighted that this was a 2011 Fixed wing multi-engine manufactured by AIRBUS.
-
-Intuitively, the different routes between airports explain the varying lengths of air time. Additional analysis could uncover which specific planes lie in the quantiles of this data, if external factors such as weather affect air time, and so on.
+The objective here was to find the distributional form for the density of observed ‘air_time’ using a continuous histogram estimator. This density distribution appears to be bimodal, with the frequency polygon coordinates capturing the second significant peak. The distribution is right-skewed, and we observe positive kurtosis. The most frequent median flight time per plane lasted just over two hours. There are outliers appearing at flight durations of over 10 hours. The plane that spent the most time in the air in 2013 on average was N384HA (see Suppl. Info.). Consulting the planes metadata highlighted that this was a 2011 Fixed wing multi-engine manufactured by AIRBUS. Intuitively, the different routes between airports explain the varying lengths of airtime. Additional analysis could uncover which specific planes lie in the quantiles of this data, if external factors such as weather affect airtime, and so on.
 
 
 ### Question 3
 
 ```{r}
+#Airports Data
+airports <- nycflights13::airports
 
+airport_flights <- flights %>% group_by(origin)
+
+#Finding Unique destinations 
+dest <- flights$dest
+unique(dest)
+
+##Long and Lats for Map
+#Creating a dataframe with long and lats of each airport
+airport_labels <- data.frame(
+  airport = c("BWI", "CLT", "BUF", "DEN", "SNA", "MSY", "SLC", "XNA", "MKE", "SEA", "ROC", "SYR", "SRQ", "RDU", "CMH", "JAX", "CHS", "MEM", "PIT", "SAN", "DCA", "CLE", "STL", "MYR", "JAC", "MDW", "HNL", "BNA", "AUS", "BTV", "PHL", "STT","EGE", "AVL", "PWM", "IND", "SAV", "CAK", "HOU", "LGB", "DAY", "ALB", "BDL", "MHT", "MSN", "GSO", "CVG", "BUR", "RIC", "GSP", "GRR", "MCI", "ORF", "SAT", "SDF", "PDX", "SJC", "OMA", "CRW", "OAK", "SMF", "TUL", "TYS", "OKC", "PVD", "DSM", "PSE", "BHM", "CAE", "HDN", "BZN", "MTJ", "EYW", "PSP", "ACK", "BGR", "ABQ", "ILM", "MVY", "SBN", "LEX", "CHO", "TVC", "ANC", "LGA", "ATL", "BOS", "BQN", "DFW", "DTW", "FLL", "IAD", "IAH", "LAS", "LAX", "MCO", "MIA", "MSP", "ORD", "PBI", "PHX", "RSW", "SFO", "SJU", "TPA"),
+  dest = c("BWI", "CLT", "BUF", "DEN", "SNA", "MSY", "SLC", "XNA", "MKE", "SEA", "ROC", "SYR", "SRQ", "RDU", "CMH", "JAX", "CHS", "MEM", "PIT", "SAN", "DCA", "CLE", "STL", "MYR", "JAC", "MDW", "HNL", "BNA", "AUS", "BTV", "PHL", "STT", "EGE", "AVL", "PWM", "IND", "SAV", "CAK", "HOU", "LGB", "DAY", "ALB", "BDL", "MHT", "MSN", "GSO", "CVG", "BUR", "RIC", "GSP", "GRR", "MCI", "ORF", "SAT", "SDF", "PDX", "SJC", "OMA", "CRW", "OAK", "SMF", "TUL", "TYS", "OKC", "PVD", "DSM", "PSE", "BHM","CAE", "HDN", "BZN", "MTJ", "EYW", "PSP", "ACK", "BGR", "ABQ", "ILM","MVY", "SBN", "LEX", "CHO", "TVC", "ANC", "LGA","ATL", "BOS", "BQN", "DFW", "DTW", "FLL", "IAD", "IAH", "LAS", "LAX", "MCO", "MIA", "MSP", "ORD", "PBI", "PHX", "RSW", "SFO", "SJU", "TPA"),
+   lat = c(39.1754, 35.214, 42.940, 39.856, 33.6757, 29.9934, 40.7899, 36.2819, 42.9485, 47.4502, 43.1185, 43.1185, 27.9779, 35.8801, 39.998, 30.4941, 32.8987, 35.0423, 40.4958, 32.7336, 38.8512, 41.409, 38.7487, 33.6827, 43.607, 41.7868, 21.3241, 36.1249, 30.1944, 44.472, 39.872, 18.3371, 39.6426, 35.4362, 43.6445, 39.7173, 32.1316, 40.9168, 29.6454, 33.8171, 39.9023, 42.748, 41.9389, 42.9309, 43.1399, 36.0977, 39.0462, 34.2005, 37.5067, 34.8903, 42.8864, 39.2978, 36.8947, 29.5337, 38.178, 45.5887, 37.3645, 41.3031, 38.3721, 37.7214, 38.6953, 36.1984, 35.8117, 35.3931, 41.7265, 41.532, 18.0086, 33.5618, 33.9382, 40.4872, 45.7775, 38.5111, 24.5567, 33.8223, 41.2535, 44.8074, 35.0496, 34.2704, 41.3917, 41.7086, 38.0367, 38.1386, 44.7414, 61.1743, 40.7769, 33.6407, 42.3656, 18.4955, 32.8965, 42.2129, 26.0727, 38.9476, 29.9902, 36.084, 33.9416, 28.4312, 25.7933, 44.882, 41.9796, 26.6832, 33.4351, 26.5362, 37.6189, 18.4394, 27.979168),
+  long = c(-76.6683, -80.9431, -78.732, -104.6737, -117.8678, -90.2572, -111.9791, -94.306, -87.8974, -122.3093, -77.6267, -76.1117, -82.5536, -78.787, -82.883, -81.6879, -80.0405, -89.9767, -80.2564, -117.1973, -77.0377, -81.8498, -90.370, -78.9288, -110.737, -87.7521, -157.925, -86.6702, -97.6699, -73.155, -75.2432, -64.9738, -106.9155, -82.5411, -70.3063, -86.2945, -81.2014, -81.4422, -95.2789, -118.1525, -84.2209, -73.8017, -72.6832, -71.437, -89.3375, -79.9373, -84.6623, -118.358, -77.3195, -82.2179, -85.5306, -94.7139, -76.202, -98.4691, -85.7396, -122.5976, -121.928, -95.894, -81.593, -122.2208, -121.591, -95.8836, -83.985, -97.6009, -71.4391, -93.6486, -66.5634, -86.752, -81.1189, -107.2219, -111.153, -107.8936, -81.7595, -116.5076, -70.0602, -68.8284, -106.617, -77.9025,-70.6156, -86.3175, -84.6042, -78.4529, -85.5828, -149.9962, -73.8734, -84.4277, -71.0096, -67.1342, -97.038, -83.3534, -80.1528, -77.4558, -95.339, -115.152, -118.4085, -81.308, -80.2906, -93.2218, -87.882, -80.0956, -112.0068, -81.7555, -122.375, -66.0018, -82.539337))
+
+#Data Manipulation
+#Number of flights from each origin airport to each destination airport:
+flight_count_per_airport <- flights |>
+  group_by(dest, origin) |>
+  summarise(flight_count_per_airport = n(), .groups = "drop")
+
+flight_count_per_airport <- flight_count_per_airport |>
+  group_by(dest)
+
+#Total number of flights in each destination:
+count <- flights |> 
+  select(dest) |>
+  count(dest)
+
+count <- as.data.frame(count)
+
+count <- count |> rename(Total_Flight_Count = n)
+
+#Merging data sets:
+airportCount <- merge(airport_labels, count, by.x = "airport", by.y = "dest", all.x = TRUE)
+
+all_combinations <- expand_grid(dest = unique(flights$dest), origin = c("JFK", "LGA", "EWR"))
+
+# Group by dest and origin and calculate flight counts
+flight_count_per_airport <- flights %>%
+  count(dest, origin) %>%
+  right_join(all_combinations, by = c("dest", "origin")) %>%
+  mutate(flight_count = replace_na(n, 0)) %>%
+  select(-n)
+
+# Pivot the data to have separate columns for each origin
+flight_count_per_airport <- flight_count_per_airport %>%
+  pivot_wider(names_from = origin, values_from = flight_count, values_fill = 0)
+
+# Calculate total flight count per destination
+total_flight_count <- flight_count_per_airport %>%
+  group_by(dest) %>%
+  summarise(total_flight_count = sum(JFK, LGA, EWR), .groups = "drop")
+
+# Join with total_flight_count
+flight_count_per_airport <- flight_count_per_airport %>%
+  left_join(total_flight_count, by = "dest")
+
+# Join with airport_labels
+flight_count_per_airport <- flight_count_per_airport %>%
+  left_join(airport_labels, by = "dest")
+
+#Labels for plot
+flight_count_per_airport$text <- paste("Airport:", flight_count_per_airport$airport,
+                                       "<br>Total Flight Count:", flight_count_per_airport$total_flight_count,
+                                       "<br>Flights from JFK:", flight_count_per_airport$JFK,
+                                       "<br>Flights from LGA:", flight_count_per_airport$LGA,
+                                       "<br>Flights from EWR:", flight_count_per_airport$EWR)
+
+flight_count_per_airport
+
+#Counting airport with highest count per dest 
+flight_count_per_airport <- flight_count_per_airport %>%
+  mutate(highest_origin = case_when(
+    JFK > EWR & JFK > LGA ~ "JFK",
+    EWR > JFK & EWR > LGA ~ "EWR",
+    LGA > JFK & LGA > EWR ~ "LGA",
+    TRUE ~ NA_character_
+  ))
+
+# Plot
+usa_map <- map_data("usa")
+
+mapUSA <- ggplot() +
+  geom_polygon(data = usa_map, aes(x = long, y = lat, group = group), 
+               fill = "lightgrey") +
+  geom_path(data = map_data("state"), aes(x = long, y = lat, group = group), size = 0.5) +
+  geom_point(data = flight_count_per_airport, aes(x = long, y = lat, size = total_flight_count, fill = highest_origin, text = text), 
+             shape = 21, color = "grey") +  
+  scale_size_continuous(name = "Total Flight Count") +
+  scale_color_manual(name = "Highest Origin",
+                     values = c("JFK" = "green", "EWR" = "red", "LGA" = "blue")) +  
+  coord_fixed() +
+  theme_void()+
+  ggtitle("Flight Counts from NYC Airports to Airports in the USA")
+
+mapInteractive <- ggplotly(mapUSA, tooltip = c("text"))
+
+mapInteractive
+
+htmlwidgets::saveWidget(widget = mapInteractive, file = "Q3Interactive.html")
 ```
 
+This map visualizes the United States, with each point representing one of the NYC airports JFK, EWR, or LGA and the destination of each flight in 2013. The size of each point corresponds to the total flight count, providing a quick visual indicator of airport activity. Additionally, the colour of each point reflects the origin airport with the highest flight count, offering insights into the main gateway for each location. LEX in Kentucky stands out as the least connected airport, with only one flight originating from NYC. In contrast, ORD airport in Chicago emerges as the most popular destination, with 17,283 flights recorded that primarily originated from LGA. Interestingly, some states like North Dakota and South Dakota have airports but lack any points on the map. This absence could stem from no flights in 2013 or missing data. We also observe the role of each airport; western states tend to have a higher frequency of flights originating from JFK airport, likely due to its status as NYC's major international hub that serves longer-distance flights. Conversely, states closer to NYC predominantly use EWR and LGA airports, which are smaller for shorter-distance flights. 
 
 ### Question 4
 
-Investigate the trends of total flights throughout the year.
-
 ```{r, message = FALSE, warning = FALSE}
 #Data Manipulation
-
 flights <- flights %>%
   mutate(day_of_year = as.numeric(format(time_hour, "%j")), carrier = as.factor(carrier)) %>% 
   mutate(Date = as.Date(time_hour))
-
 
 flights_totals <- flights %>% 
   group_by(carrier, day_of_year) %>% 
@@ -184,8 +279,7 @@ comp_EV <- components(dcmp_EV) %>%
   as_tsibble()
 
 major_holidays <- as.Date(c("2013-07-04", "2013-09-01", "2013-11-28", "2013-12-25", "2014-01-01" ))
-```
-```{r}
+
 ggplot(subset(flights_totals_Date, carrier %in% top_4_carriers), aes(x = Date, y = total_flights, colour = carrier)) +
   geom_line(alpha = 0.6) +
   geom_line(data = comp_UA, aes( y = trend), colour = "purple") + 
@@ -196,28 +290,21 @@ ggplot(subset(flights_totals_Date, carrier %in% top_4_carriers), aes(x = Date, y
   labs(y= "Total Flights", x = "Date", title = "Flight Trends across 4 Major Airlines in NYC")
 ```
 
-The plot above illustrates the total number of flights per day across three major airports in NYC: JFK, LaGuardia, and EWK. The total flights are divided according to the four most popular airlines from the dataset.
-
-While the data shows a generally stable trend, there is a noticeable weekly seasonal pattern, where weekends experience lower activity compared to weekdays (see supplementary information).
-
-Overlaying the actual data are trendlines representing the flight trends for each airline. These trendlines offer insights into periods when airports experienced higher-than-usual activity. Notably, there are distinct dips in the flight count on specific dates.
-
-To investigate these dips, an examination of the weather dataset was conducted, but no anomalies were found for these days. A list comprising major federal holidays in the US was then created. Plotting vertical lines to signify these dates indicated a correlation with some of the observed dips in total flights.
-
-Additionaly, carrier B6 appears to be slightly more resilient to these holiday-related trends. This could be attributed to the fact that B6's primary airport is JFK, which is not the primary airport for any of the other major airlines plotted. However, further analysis would be needed to prove this hypothesis.
-
-
+This plot illustrates the total number of flights per day across three major airports in NYC: John F Kennedy Intl, La Guardia, and Newark Liberty Intl. These totals are associated with the four most popular airlines in the dataset. While we see a mostly stationary time series, there is notable weekly seasonality in which weekends experience lower activity compared to weekdays (see Suppl. Info.). Flight trendlines for each airline are superimposed on the actual data and offer insights into periods when airports experienced higher-than-usual activity. Evidently, there are distinct dips in flight count on specific dates. To investigate these dips, an examination of the weather dataset was conducted, but no anomalies were found for these days. A list comprising major federal holidays in the US was then created. Overlaying vertical lines that signify these dates indicated a correlation with some of the observed troughs. Additionally, carrier B6 appears to be slightly more resilient to these holiday-related trends. This could be attributed to the fact that B6's primary airport is JFK, which is not the primary airport for any of the other major airlines plotted. However, further analysis would be required to prove this hypothesis.
 
 ## Discussion
 
-The visualisations above display this data coherently so that we can make statistical inferences from them. Approximating the distribution of a variable is a powerful initial step to delve further into prevailing relationships in data. In particular, we received insights into which airlines tended to have late arrivals, which locations were often flown into, and times of the year when sales increased. Airline companies could use such information for future planning needs. 
+The visualisations above display this data coherently so that we can make statistical inferences from them. Approximating the distribution of a variable is a powerful initial step to uncover prevailing truths in data. Additionally, we received insights into which airlines tended to have late arrivals, which locations were often flown into, and times of the year when flight sales plummeted. Airline companies could use such information for future planning needs. 
 
-## References section
+## References
 
 McInerney R, Thompson C, Ukachukwu O (2024). _densr: Overlay densities to
 histograms_. R package version 0.1.0, <https://github.com/rachel-mc/densr>.  
 
-R Core Team. (2023). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL: https://www.R-project.org/  
+R Core Team. (2023). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. URL: https://www.R-project.org/ 
+
+C. Sievert. Interactive Web-Based Data Visualization with R, plotly, and shiny.
+Chapman and Hall/CRC Florida, 2020.
 
 Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.  
 
